@@ -1,0 +1,10 @@
+services:
+  bt-cf-sync:
+    image: ghcr.io/xzw38/bt-cf-sync:latest
+    container_name: bt-cf-sync
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /www/server/panel/vhost/nginx:/bt-nginx:ro
+      - ./data:/data

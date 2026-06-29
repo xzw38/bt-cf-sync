@@ -1,0 +1,18 @@
+services:
+  bt-cf-sync:
+    image: ghcr.io/xzw38/bt-cf-sync:latest
+    container_name: bt-cf-sync
+    restart: unless-stopped
+    environment:
+      CF_API_TOKEN: "your_cloudflare_api_token"
+      BASE_DOMAIN: "lsjmax.top"
+      OWNER_ID: "vps1"
+      PUBLIC_IP: "auto"
+      PROXIED: "true"
+      SLEEP_SECONDS: "60"
+      ADOPT_EXISTING: "true"
+      DELETE_MISSING: "true"
+      RECORD_TYPE: "A"
+    volumes:
+      - /www/server/panel/vhost/nginx:/bt-nginx:ro
+      - /opt/bt-cf-sync/data:/data
