@@ -6,6 +6,12 @@
 
 容器会读取宝塔生成的 Nginx 站点配置，提取 `server_name` 里属于 `BASE_DOMAIN` 的域名，然后在 Cloudflare 自动创建、更新或删除 DNS 记录。
 
+容器还带一个只读状态面板，默认把宿主机 `25708` 映射到容器内 `8080`：
+
+```text
+http://VPS_IP:25708
+```
+
 ## 工作原理
 
 ```text
@@ -50,6 +56,8 @@ SLEEP_SECONDS=60
 ADOPT_EXISTING=true
 DELETE_MISSING=true
 RECORD_TYPE=A
+WEB_USERNAME=admin
+WEB_PASSWORD=change_me
 ```
 
 `compose.yaml` 示例：
@@ -62,6 +70,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    ports:
+      - "25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - ./data:/data
@@ -96,6 +106,10 @@ services:
       ADOPT_EXISTING: "true"
       DELETE_MISSING: "true"
       RECORD_TYPE: "A"
+      WEB_USERNAME: "admin"
+      WEB_PASSWORD: "change_me"
+    ports:
+      - "25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - /opt/bt-cf-sync/data:/data
@@ -134,6 +148,34 @@ hk-vps
 | `DELETE_MISSING` | `true` | 宝塔站点消失后，是否删除自己拥有的 DNS 记录。 |
 | `RECORD_TYPE` | `A` | DNS 记录类型，IPv4 用 `A`，IPv6 用 `AAAA`。 |
 | `WATCH_DIR` | `/bt-nginx` | 容器内读取宝塔 Nginx 站点配置的路径。 |
+| `WEB_USERNAME` | 空 | 状态面板 Basic Auth 用户名，留空则不启用认证。 |
+| `WEB_PASSWORD` | 空 | 状态面板 Basic Auth 密码，留空则不启用认证。 |
+| `WEB_PORT` | `8080` | 容器内部 Web 服务端口。 |
+
+## 状态面板
+
+浏览器打开：
+
+```text
+http://VPS_IP:25708
+```
+
+面板会显示：
+
+- 宝塔配置里扫描到的域名
+- Cloudflare 是否已有对应记录
+- Cloudflare 当前指向的 IP
+- 是否指向本机 IP
+- 是否由当前 `OWNER_ID` 管理
+- 最近同步时间和最近日志
+
+也可以读取 JSON API：
+
+```text
+http://VPS_IP:25708/api/status
+```
+
+建议公网暴露时设置 `WEB_USERNAME` 和 `WEB_PASSWORD`，或者只允许内网访问。
 
 ## 更新镜像
 
@@ -185,6 +227,12 @@ Sync BT Panel Nginx site domains to Cloudflare DNS from a small Docker container
 
 The container reads BT Panel Nginx vhost files, extracts `server_name` values under `BASE_DOMAIN`, and creates, updates, or deletes Cloudflare DNS records for the current VPS.
 
+The container also includes a read-only status dashboard. By default, host port `25708` maps to container port `8080`:
+
+```text
+http://VPS_IP:25708
+```
+
 ### How It Works
 
 ```text
@@ -229,6 +277,8 @@ SLEEP_SECONDS=60
 ADOPT_EXISTING=true
 DELETE_MISSING=true
 RECORD_TYPE=A
+WEB_USERNAME=admin
+WEB_PASSWORD=change_me
 ```
 
 `compose.yaml` example:
@@ -241,6 +291,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    ports:
+      - "25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - ./data:/data
@@ -275,6 +327,10 @@ services:
       ADOPT_EXISTING: "true"
       DELETE_MISSING: "true"
       RECORD_TYPE: "A"
+      WEB_USERNAME: "admin"
+      WEB_PASSWORD: "change_me"
+    ports:
+      - "25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - /opt/bt-cf-sync/data:/data
@@ -307,6 +363,34 @@ Both methods do the same thing: `.env` keeps variables in a file, while Portaine
 | `DELETE_MISSING` | `true` | Delete owned records when the site disappears from BT Panel. |
 | `RECORD_TYPE` | `A` | Use `A` for IPv4 or `AAAA` for IPv6. |
 | `WATCH_DIR` | `/bt-nginx` | Container path for BT Panel Nginx vhost files. |
+| `WEB_USERNAME` | empty | Basic Auth username for the status dashboard. Empty disables auth. |
+| `WEB_PASSWORD` | empty | Basic Auth password for the status dashboard. Empty disables auth. |
+| `WEB_PORT` | `8080` | Internal web service port. |
+
+### Status Dashboard
+
+Open:
+
+```text
+http://VPS_IP:25708
+```
+
+The dashboard shows:
+
+- domains scanned from BT Panel configuration
+- whether Cloudflare has matching records
+- the current Cloudflare target IP
+- whether the record points to this VPS
+- whether the record is managed by the current `OWNER_ID`
+- last sync time and recent logs
+
+JSON API:
+
+```text
+http://VPS_IP:25708/api/status
+```
+
+If exposing the port publicly, set `WEB_USERNAME` and `WEB_PASSWORD`, or restrict access to a private network.
 
 ### Updating
 

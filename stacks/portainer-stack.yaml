@@ -13,6 +13,10 @@ services:
       ADOPT_EXISTING: "true"
       DELETE_MISSING: "true"
       RECORD_TYPE: "A"
+      WEB_USERNAME: "admin"
+      WEB_PASSWORD: "change_me"
+    ports:
+      - "25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - /opt/bt-cf-sync/data:/data

@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    ports:
+      - "25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - ./data:/data

@@ -1,10 +1,9 @@
-FROM alpine:3.20
+FROM python:3.12-alpine
 
-RUN apk add --no-cache bash ca-certificates coreutils curl grep jq sed
+COPY app.py /usr/local/bin/bt-cf-sync
 
-COPY sync.sh /usr/local/bin/bt-cf-sync
-RUN chmod +x /usr/local/bin/bt-cf-sync
+EXPOSE 8080
 
 VOLUME ["/data"]
 
-CMD ["/usr/local/bin/bt-cf-sync"]
+CMD ["python", "/usr/local/bin/bt-cf-sync"]
