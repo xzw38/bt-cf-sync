@@ -152,6 +152,24 @@ hk-vps
 | `WEB_PASSWORD` | 空 | 状态面板 Basic Auth 密码，留空则不启用认证。 |
 | `WEB_PORT` | `8080` | 容器内部 Web 服务端口。 |
 
+## 常用变量怎么填
+
+`OWNER_ID` 是给当前 VPS 起的唯一名字，例如 `main`、`arm64`、`oracle-arm`、`hk-vps`。它会写进 Cloudflare DNS 记录的 comment，用来判断这条记录是不是当前容器管理的。多台 VPS 部署时，每台机器都要不同。
+
+`PUBLIC_IP=auto` 表示自动获取当前 VPS 的公网 IP。一般保持 `auto` 即可；如果想固定写死，也可以填具体 IP，例如 `1.2.3.4`。
+
+`PROXIED=true` 表示开启 Cloudflare 橙云代理，`PROXIED=false` 表示灰云 DNS only。普通 HTTP/HTTPS 网站一般用 `true`，特殊端口或非 Web 服务可能需要 `false`。
+
+`SLEEP_SECONDS=60` 表示每 60 秒扫描一次宝塔配置并同步 Cloudflare。
+
+`ADOPT_EXISTING=true` 表示如果 Cloudflare 已经有同名记录，并且已经指向当前 VPS IP，容器会接管它并写入自己的管理标记。设为 `false` 则不接管已有记录。
+
+`DELETE_MISSING=true` 表示宝塔里删除站点后，如果对应 DNS 记录是当前容器管理的，就从 Cloudflare 删除。设为 `false` 则只创建/更新，不自动删除。
+
+`RECORD_TYPE=A` 表示同步 IPv4 记录。普通 VPS 基本用 `A`；如果是纯 IPv6 VPS，改成 `AAAA`。
+
+`WEB_USERNAME` 和 `WEB_PASSWORD` 是状态面板的登录账号密码。建议把示例里的 `change_me` 改成自己的强密码；如果两个都留空，则不启用登录认证。
+
 ## 状态面板
 
 在 VPS 本机打开：
@@ -385,6 +403,24 @@ Both methods do the same thing: `.env` keeps variables in a file, while Portaine
 | `WEB_USERNAME` | empty | Basic Auth username for the status dashboard. Empty disables auth. |
 | `WEB_PASSWORD` | empty | Basic Auth password for the status dashboard. Empty disables auth. |
 | `WEB_PORT` | `8080` | Internal web service port. |
+
+### Common Variable Guide
+
+`OWNER_ID` is a unique name for the current VPS, such as `main`, `arm64`, `oracle-arm`, or `hk-vps`. It is written to the Cloudflare DNS record comment so the container can tell whether a record belongs to this VPS. Use a different value on each VPS.
+
+`PUBLIC_IP=auto` means the container detects the current public IP automatically. This is usually the right setting. You can also set a fixed IP, such as `1.2.3.4`.
+
+`PROXIED=true` enables the Cloudflare orange-cloud proxy. `PROXIED=false` means DNS only. Regular HTTP/HTTPS sites usually use `true`; special ports or non-web services may need `false`.
+
+`SLEEP_SECONDS=60` means the container scans BT Panel configuration and syncs Cloudflare every 60 seconds.
+
+`ADOPT_EXISTING=true` means that if Cloudflare already has a matching record pointing to this VPS IP, the container adopts it and writes its ownership marker. Set it to `false` to avoid adopting existing records.
+
+`DELETE_MISSING=true` means that when a site disappears from BT Panel, the matching DNS record is deleted from Cloudflare only if it is managed by this container. Set it to `false` to create/update only.
+
+`RECORD_TYPE=A` syncs IPv4 records. Most VPS machines should use `A`; use `AAAA` for IPv6-only VPS machines.
+
+`WEB_USERNAME` and `WEB_PASSWORD` are the dashboard login credentials. Change the example `change_me` to a strong password. If both are empty, authentication is disabled.
 
 ### Status Dashboard
 
