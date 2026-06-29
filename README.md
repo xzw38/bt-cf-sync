@@ -9,9 +9,9 @@
 ## 工作原理
 
 ```text
-宝塔创建 /www/server/panel/vhost/nginx/example.lsjmax.top.conf
+宝塔创建 /www/server/panel/vhost/nginx/app.example.com.conf
 Docker 通过只读 volume 在 /bt-nginx 看到这个文件
-脚本提取 server_name example.lsjmax.top
+脚本提取 server_name app.example.com
 脚本调用 Cloudflare API 创建或更新 DNS 记录
 ```
 
@@ -26,7 +26,7 @@ Docker 通过只读 volume 在 /bt-nginx 看到这个文件
 - Zone - Zone - Read
 - Zone - DNS - Edit
 
-范围建议限制到指定域名，例如 `lsjmax.top`。
+范围建议限制到指定域名，例如 `example.com`。
 
 ## Docker Compose 部署
 
@@ -84,7 +84,7 @@ hk-vps
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `CF_API_TOKEN` | 必填 | Cloudflare API Token。 |
-| `BASE_DOMAIN` | 必填 | 要同步的主域名，例如 `lsjmax.top`。 |
+| `BASE_DOMAIN` | 必填 | 要同步的主域名，例如 `example.com`。 |
 | `OWNER_ID` | `default` | 当前 VPS 的唯一名称。 |
 | `PUBLIC_IP` | `auto` | 写入 DNS 的公网 IP，`auto` 表示自动获取。 |
 | `PROXIED` | `true` | 是否开启 Cloudflare 橙云代理。 |
@@ -147,9 +147,9 @@ The container reads BT Panel Nginx vhost files, extracts `server_name` values un
 ### How It Works
 
 ```text
-BT Panel creates /www/server/panel/vhost/nginx/example.lsjmax.top.conf
+BT Panel creates /www/server/panel/vhost/nginx/app.example.com.conf
 The container sees it through a read-only volume at /bt-nginx
-The script extracts server_name example.lsjmax.top
+The script extracts server_name app.example.com
 The script creates or updates the Cloudflare DNS record
 ```
 
@@ -164,7 +164,7 @@ Create a Cloudflare API token with:
 - Zone - Zone - Read
 - Zone - DNS - Edit
 
-Limit the token to the specific zone, for example `lsjmax.top`.
+Limit the token to the specific zone, for example `example.com`.
 
 ### Docker Compose
 
@@ -210,7 +210,7 @@ Each VPS should use a different `OWNER_ID`, such as `main`, `oracle-arm`, or `hk
 | Variable | Default | Description |
 | --- | --- | --- |
 | `CF_API_TOKEN` | required | Cloudflare API token. |
-| `BASE_DOMAIN` | required | Domain to sync, for example `lsjmax.top`. |
+| `BASE_DOMAIN` | required | Domain to sync, for example `example.com`. |
 | `OWNER_ID` | `default` | Unique owner name for this VPS. |
 | `PUBLIC_IP` | `auto` | Public IP to write. Use `auto` or a fixed IP. |
 | `PROXIED` | `true` | Cloudflare orange-cloud proxy setting. |

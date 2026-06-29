@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       CF_API_TOKEN: "your_cloudflare_api_token"
-      BASE_DOMAIN: "lsjmax.top"
+      BASE_DOMAIN: "example.com"
       OWNER_ID: "vps1"
       PUBLIC_IP: "auto"
       PROXIED: "true"
