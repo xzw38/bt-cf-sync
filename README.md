@@ -28,7 +28,9 @@ Docker 通过只读 volume 在 /bt-nginx 看到这个文件
 
 范围建议限制到指定域名，例如 `example.com`。
 
-## Docker Compose 部署
+## 部署方式一：Docker Compose + `.env`
+
+这种方式适合你直接 SSH 到 VPS 上部署。变量写在 `.env`，`compose.yaml` 只负责引用。
 
 复制环境变量示例：
 
@@ -36,14 +38,21 @@ Docker 通过只读 volume 在 /bt-nginx 看到这个文件
 cp .env.example .env
 ```
 
-编辑 `.env` 后启动：
+`.env` 示例：
 
-```bash
-docker compose up -d
-docker logs -f bt-cf-sync
+```env
+CF_API_TOKEN=your_cloudflare_api_token
+BASE_DOMAIN=example.com
+OWNER_ID=vps1
+PUBLIC_IP=auto
+PROXIED=true
+SLEEP_SECONDS=60
+ADOPT_EXISTING=true
+DELETE_MISSING=true
+RECORD_TYPE=A
 ```
 
-`compose.yaml` 默认使用 GHCR 镜像：
+`compose.yaml` 示例：
 
 ```yaml
 services:
@@ -58,11 +67,41 @@ services:
       - ./data:/data
 ```
 
+编辑 `.env` 后启动：
+
+```bash
+docker compose up -d
+docker logs -f bt-cf-sync
+```
+
 如果镜像发布在其他 GitHub 账号或组织下，把 `xzw38` 改成对应名称。
 
-## Portainer Stack
+## 部署方式二：Portainer Stack 直接写变量
 
-可以直接参考 [stacks/portainer-stack.yaml](stacks/portainer-stack.yaml)。
+这种方式适合在 Portainer 的 Stacks 页面直接粘贴。变量写在 `environment` 里，不需要单独创建 `.env` 文件。
+
+```yaml
+services:
+  bt-cf-sync:
+    image: ghcr.io/xzw38/bt-cf-sync:latest
+    container_name: bt-cf-sync
+    restart: unless-stopped
+    environment:
+      CF_API_TOKEN: "your_cloudflare_api_token"
+      BASE_DOMAIN: "example.com"
+      OWNER_ID: "vps1"
+      PUBLIC_IP: "auto"
+      PROXIED: "true"
+      SLEEP_SECONDS: "60"
+      ADOPT_EXISTING: "true"
+      DELETE_MISSING: "true"
+      RECORD_TYPE: "A"
+    volumes:
+      - /www/server/panel/vhost/nginx:/bt-nginx:ro
+      - /opt/bt-cf-sync/data:/data
+```
+
+也可以直接参考 [stacks/portainer-stack.yaml](stacks/portainer-stack.yaml)。
 
 在 Portainer 的 Stacks 里重点修改：
 
@@ -78,6 +117,8 @@ main
 oracle-arm
 hk-vps
 ```
+
+两种方式本质一样：`.env` 是把变量放到文件里，Portainer Stack 是把变量直接写进 YAML。
 
 ## 环境变量
 
@@ -166,16 +207,31 @@ Create a Cloudflare API token with:
 
 Limit the token to the specific zone, for example `example.com`.
 
-### Docker Compose
+### Deployment Option 1: Docker Compose + `.env`
+
+This option is best when deploying over SSH. Variables are stored in `.env`, and `compose.yaml` references that file.
 
 Copy `.env.example` to `.env`, edit the values, then run:
 
 ```bash
-docker compose up -d
-docker logs -f bt-cf-sync
+cp .env.example .env
 ```
 
-`compose.yaml` uses the GHCR image:
+`.env` example:
+
+```env
+CF_API_TOKEN=your_cloudflare_api_token
+BASE_DOMAIN=example.com
+OWNER_ID=vps1
+PUBLIC_IP=auto
+PROXIED=true
+SLEEP_SECONDS=60
+ADOPT_EXISTING=true
+DELETE_MISSING=true
+RECORD_TYPE=A
+```
+
+`compose.yaml` example:
 
 ```yaml
 services:
@@ -190,9 +246,39 @@ services:
       - ./data:/data
 ```
 
+Start it:
+
+```bash
+docker compose up -d
+docker logs -f bt-cf-sync
+```
+
 Replace `xzw38` if you publish the image under another GitHub account or organization.
 
-### Portainer Stack
+### Deployment Option 2: Portainer Stack With Inline Variables
+
+This option is best for Portainer Stacks. Variables are written directly under `environment`, so no separate `.env` file is needed.
+
+```yaml
+services:
+  bt-cf-sync:
+    image: ghcr.io/xzw38/bt-cf-sync:latest
+    container_name: bt-cf-sync
+    restart: unless-stopped
+    environment:
+      CF_API_TOKEN: "your_cloudflare_api_token"
+      BASE_DOMAIN: "example.com"
+      OWNER_ID: "vps1"
+      PUBLIC_IP: "auto"
+      PROXIED: "true"
+      SLEEP_SECONDS: "60"
+      ADOPT_EXISTING: "true"
+      DELETE_MISSING: "true"
+      RECORD_TYPE: "A"
+    volumes:
+      - /www/server/panel/vhost/nginx:/bt-nginx:ro
+      - /opt/bt-cf-sync/data:/data
+```
 
 Use [stacks/portainer-stack.yaml](stacks/portainer-stack.yaml) as the base.
 
@@ -204,6 +290,8 @@ In Portainer, replace:
 - `OWNER_ID`
 
 Each VPS should use a different `OWNER_ID`, such as `main`, `oracle-arm`, or `hk-vps`.
+
+Both methods do the same thing: `.env` keeps variables in a file, while Portainer Stack writes them directly in YAML.
 
 ### Environment Variables
 
