@@ -13,6 +13,8 @@ services:
       ADOPT_EXISTING: "true"
       DELETE_MISSING: "true"
       RECORD_TYPE: "A"
+      LOG_MAX_BYTES: "5242880"
+      LOG_BACKUPS: "3"
       WEB_USERNAME: "admin"
       WEB_PASSWORD: "change_me"
     ports:

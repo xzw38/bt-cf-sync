@@ -56,6 +56,8 @@ SLEEP_SECONDS=60
 ADOPT_EXISTING=true
 DELETE_MISSING=true
 RECORD_TYPE=A
+LOG_MAX_BYTES=5242880
+LOG_BACKUPS=3
 WEB_USERNAME=admin
 WEB_PASSWORD=change_me
 ```
@@ -106,6 +108,8 @@ services:
       ADOPT_EXISTING: "true"
       DELETE_MISSING: "true"
       RECORD_TYPE: "A"
+      LOG_MAX_BYTES: "5242880"
+      LOG_BACKUPS: "3"
       WEB_USERNAME: "admin"
       WEB_PASSWORD: "change_me"
     ports:
@@ -147,6 +151,8 @@ hk-vps
 | `ADOPT_EXISTING` | `true` | 如果已有记录已经指向当前 VPS IP，是否接管并打标记。 |
 | `DELETE_MISSING` | `true` | 宝塔站点消失后，是否删除自己拥有的 DNS 记录。 |
 | `RECORD_TYPE` | `A` | DNS 记录类型，IPv4 用 `A`，IPv6 用 `AAAA`。 |
+| `LOG_MAX_BYTES` | `5242880` | 所有日志文件合计最大字节数，默认 5MB；设为 `0` 表示不限制。 |
+| `LOG_BACKUPS` | `3` | 日志轮转保留数量，默认保留 `sync.log.1` 到 `sync.log.3`。 |
 | `WATCH_DIR` | `/bt-nginx` | 容器内读取宝塔 Nginx 站点配置的路径。 |
 | `WEB_USERNAME` | 空 | 状态面板 Basic Auth 用户名，留空则不启用认证。 |
 | `WEB_PASSWORD` | 空 | 状态面板 Basic Auth 密码，留空则不启用认证。 |
@@ -167,6 +173,10 @@ hk-vps
 `DELETE_MISSING=true` 表示宝塔里删除站点后，如果对应 DNS 记录是当前容器管理的，就从 Cloudflare 删除。设为 `false` 则只创建/更新，不自动删除。
 
 `RECORD_TYPE=A` 表示同步 IPv4 记录。普通 VPS 基本用 `A`；如果是纯 IPv6 VPS，改成 `AAAA`。
+
+`LOG_MAX_BYTES=5242880` 表示所有日志文件合计最多约 5MB。超过后会自动轮转和清理旧日志；如果不想限制，可以设为 `0`。
+
+`LOG_BACKUPS=3` 表示最多保留 3 个旧日志文件，也就是 `sync.log.1`、`sync.log.2`、`sync.log.3`。
 
 `WEB_USERNAME` 和 `WEB_PASSWORD` 是状态面板的登录账号密码。建议把示例里的 `change_me` 改成自己的强密码；如果两个都留空，则不启用登录认证。
 
@@ -314,6 +324,8 @@ SLEEP_SECONDS=60
 ADOPT_EXISTING=true
 DELETE_MISSING=true
 RECORD_TYPE=A
+LOG_MAX_BYTES=5242880
+LOG_BACKUPS=3
 WEB_USERNAME=admin
 WEB_PASSWORD=change_me
 ```
@@ -364,6 +376,8 @@ services:
       ADOPT_EXISTING: "true"
       DELETE_MISSING: "true"
       RECORD_TYPE: "A"
+      LOG_MAX_BYTES: "5242880"
+      LOG_BACKUPS: "3"
       WEB_USERNAME: "admin"
       WEB_PASSWORD: "change_me"
     ports:
@@ -399,6 +413,8 @@ Both methods do the same thing: `.env` keeps variables in a file, while Portaine
 | `ADOPT_EXISTING` | `true` | Adopt existing records that already point to this VPS IP. |
 | `DELETE_MISSING` | `true` | Delete owned records when the site disappears from BT Panel. |
 | `RECORD_TYPE` | `A` | Use `A` for IPv4 or `AAAA` for IPv6. |
+| `LOG_MAX_BYTES` | `5242880` | Maximum combined size of all log files. Default is 5MB. Set to `0` to disable the limit. |
+| `LOG_BACKUPS` | `3` | Number of rotated log backups, keeping `sync.log.1` through `sync.log.3` by default. |
 | `WATCH_DIR` | `/bt-nginx` | Container path for BT Panel Nginx vhost files. |
 | `WEB_USERNAME` | empty | Basic Auth username for the status dashboard. Empty disables auth. |
 | `WEB_PASSWORD` | empty | Basic Auth password for the status dashboard. Empty disables auth. |
@@ -419,6 +435,10 @@ Both methods do the same thing: `.env` keeps variables in a file, while Portaine
 `DELETE_MISSING=true` means that when a site disappears from BT Panel, the matching DNS record is deleted from Cloudflare only if it is managed by this container. Set it to `false` to create/update only.
 
 `RECORD_TYPE=A` syncs IPv4 records. Most VPS machines should use `A`; use `AAAA` for IPv6-only VPS machines.
+
+`LOG_MAX_BYTES=5242880` keeps all log files at about 5MB total. When the limit is reached, old logs are rotated and trimmed automatically. Set it to `0` to disable the limit.
+
+`LOG_BACKUPS=3` keeps up to three rotated log files: `sync.log.1`, `sync.log.2`, and `sync.log.3`.
 
 `WEB_USERNAME` and `WEB_PASSWORD` are the dashboard login credentials. Change the example `change_me` to a strong password. If both are empty, authentication is disabled.
 

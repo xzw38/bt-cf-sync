@@ -49,6 +49,8 @@ class Config:
     watch_dir: Path = field(default_factory=lambda: Path(getenv("WATCH_DIR", "/bt-nginx")))
     state_file: Path = field(default_factory=lambda: Path(getenv("STATE_FILE", "/data/owned-domains.txt")))
     log_file: Path = field(default_factory=lambda: Path(getenv("LOG_FILE", "/data/sync.log")))
+    log_max_bytes: int = field(default_factory=lambda: int(getenv("LOG_MAX_BYTES", "5242880")))
+    log_backups: int = field(default_factory=lambda: int(getenv("LOG_BACKUPS", "3")))
     web_bind: str = field(default_factory=lambda: getenv("WEB_BIND", "0.0.0.0"))
     web_port: int = field(default_factory=lambda: int(getenv("WEB_PORT", "8080")))
     web_username: str = field(default_factory=lambda: getenv("WEB_USERNAME", ""))
@@ -66,6 +68,10 @@ if cfg.record_type not in {"A", "AAAA"}:
 cfg.state_file.parent.mkdir(parents=True, exist_ok=True)
 cfg.log_file.parent.mkdir(parents=True, exist_ok=True)
 cfg.state_file.touch(exist_ok=True)
+if cfg.log_max_bytes < 0:
+    raise RuntimeError("LOG_MAX_BYTES must be 0 or greater")
+if cfg.log_backups < 0:
+    raise RuntimeError("LOG_BACKUPS must be 0 or greater")
 
 state_lock = threading.Lock()
 last_status: dict[str, Any] = {
@@ -83,8 +89,53 @@ last_status: dict[str, Any] = {
 def log(message: str) -> None:
     line = f"{time.strftime('%F %T')} {message}"
     print(line, flush=True)
+    rotate_logs_if_needed(len(line.encode("utf-8")) + 1)
     with cfg.log_file.open("a", encoding="utf-8") as handle:
         handle.write(line + "\n")
+
+
+def log_files() -> list[Path]:
+    files = [cfg.log_file]
+    files.extend(Path(f"{cfg.log_file}.{index}") for index in range(1, cfg.log_backups + 1))
+    return files
+
+
+def logs_total_size() -> int:
+    return sum(path.stat().st_size for path in log_files() if path.exists())
+
+
+def rotate_logs_if_needed(incoming_bytes: int = 0) -> None:
+    if cfg.log_max_bytes <= 0:
+        return
+    if logs_total_size() + incoming_bytes <= cfg.log_max_bytes:
+        return
+
+    oldest = Path(f"{cfg.log_file}.{cfg.log_backups}")
+    if cfg.log_backups > 0 and oldest.exists():
+        oldest.unlink()
+
+    for index in range(cfg.log_backups - 1, 0, -1):
+        source = Path(f"{cfg.log_file}.{index}")
+        target = Path(f"{cfg.log_file}.{index + 1}")
+        if source.exists():
+            source.replace(target)
+
+    if cfg.log_backups > 0 and cfg.log_file.exists():
+        cfg.log_file.replace(Path(f"{cfg.log_file}.1"))
+    elif cfg.log_file.exists():
+        cfg.log_file.unlink()
+
+    trim_logs_to_limit(incoming_bytes)
+
+
+def trim_logs_to_limit(incoming_bytes: int = 0) -> None:
+    if cfg.log_max_bytes <= 0:
+        return
+    for path in reversed(log_files()):
+        if logs_total_size() + incoming_bytes <= cfg.log_max_bytes:
+            return
+        if path.exists():
+            path.unlink()
 
 
 def request_json(method: str, url: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -381,9 +432,10 @@ def sync_loop() -> None:
 
 
 def tail_log(max_lines: int = 80) -> list[str]:
-    if not cfg.log_file.exists():
-        return []
-    lines = cfg.log_file.read_text(encoding="utf-8", errors="replace").splitlines()
+    lines: list[str] = []
+    for path in reversed(log_files()):
+        if path.exists():
+            lines.extend(path.read_text(encoding="utf-8", errors="replace").splitlines())
     return lines[-max_lines:]
 
 
