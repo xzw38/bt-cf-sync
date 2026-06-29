@@ -6,10 +6,10 @@
 
 容器会读取宝塔生成的 Nginx 站点配置，提取 `server_name` 里属于 `BASE_DOMAIN` 的域名，然后在 Cloudflare 自动创建、更新或删除 DNS 记录。
 
-容器还带一个只读状态面板，默认把宿主机 `25708` 映射到容器内 `8080`：
+容器还带一个只读状态面板，默认只监听宿主机本地地址 `127.0.0.1:25708`，再映射到容器内 `8080`：
 
 ```text
-http://VPS_IP:25708
+http://127.0.0.1:25708
 ```
 
 ## 工作原理
@@ -71,7 +71,7 @@ services:
     env_file:
       - .env
     ports:
-      - "25708:8080"
+      - "127.0.0.1:25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - ./data:/data
@@ -109,7 +109,7 @@ services:
       WEB_USERNAME: "admin"
       WEB_PASSWORD: "change_me"
     ports:
-      - "25708:8080"
+      - "127.0.0.1:25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - /opt/bt-cf-sync/data:/data
@@ -154,10 +154,29 @@ hk-vps
 
 ## 状态面板
 
-浏览器打开：
+在 VPS 本机打开：
 
 ```text
-http://VPS_IP:25708
+http://127.0.0.1:25708
+```
+
+如果你在本地电脑看远程 VPS，可以用 SSH 隧道：
+
+```bash
+ssh -L 25708:127.0.0.1:25708 root@your-vps-ip
+```
+
+然后本地浏览器打开：
+
+```text
+http://127.0.0.1:25708
+```
+
+如果确实想公网直接访问，把端口映射改成：
+
+```yaml
+ports:
+  - "25708:8080"
 ```
 
 面板会显示：
@@ -172,10 +191,10 @@ http://VPS_IP:25708
 也可以读取 JSON API：
 
 ```text
-http://VPS_IP:25708/api/status
+http://127.0.0.1:25708/api/status
 ```
 
-建议公网暴露时设置 `WEB_USERNAME` 和 `WEB_PASSWORD`，或者只允许内网访问。
+建议保持默认本地监听；如果公网暴露，务必设置 `WEB_USERNAME` 和 `WEB_PASSWORD`，并配合防火墙限制来源。
 
 ## 更新镜像
 
@@ -227,10 +246,10 @@ Sync BT Panel Nginx site domains to Cloudflare DNS from a small Docker container
 
 The container reads BT Panel Nginx vhost files, extracts `server_name` values under `BASE_DOMAIN`, and creates, updates, or deletes Cloudflare DNS records for the current VPS.
 
-The container also includes a read-only status dashboard. By default, host port `25708` maps to container port `8080`:
+The container also includes a read-only status dashboard. By default, it binds only to the host loopback address `127.0.0.1:25708` and maps to container port `8080`:
 
 ```text
-http://VPS_IP:25708
+http://127.0.0.1:25708
 ```
 
 ### How It Works
@@ -292,7 +311,7 @@ services:
     env_file:
       - .env
     ports:
-      - "25708:8080"
+      - "127.0.0.1:25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - ./data:/data
@@ -330,7 +349,7 @@ services:
       WEB_USERNAME: "admin"
       WEB_PASSWORD: "change_me"
     ports:
-      - "25708:8080"
+      - "127.0.0.1:25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - /opt/bt-cf-sync/data:/data
@@ -369,10 +388,29 @@ Both methods do the same thing: `.env` keeps variables in a file, while Portaine
 
 ### Status Dashboard
 
-Open:
+On the VPS itself, open:
 
 ```text
-http://VPS_IP:25708
+http://127.0.0.1:25708
+```
+
+From your local computer, use an SSH tunnel:
+
+```bash
+ssh -L 25708:127.0.0.1:25708 root@your-vps-ip
+```
+
+Then open locally:
+
+```text
+http://127.0.0.1:25708
+```
+
+If you intentionally want public access, change the port mapping to:
+
+```yaml
+ports:
+  - "25708:8080"
 ```
 
 The dashboard shows:
@@ -387,10 +425,10 @@ The dashboard shows:
 JSON API:
 
 ```text
-http://VPS_IP:25708/api/status
+http://127.0.0.1:25708/api/status
 ```
 
-If exposing the port publicly, set `WEB_USERNAME` and `WEB_PASSWORD`, or restrict access to a private network.
+Keep the default local-only binding when possible. If exposing the port publicly, set `WEB_USERNAME` and `WEB_PASSWORD`, and restrict access with a firewall.
 
 ### Updating
 

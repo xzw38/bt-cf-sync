@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     ports:
-      - "25708:8080"
+      - "127.0.0.1:25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - ./data:/data

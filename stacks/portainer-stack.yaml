@@ -16,7 +16,7 @@ services:
       WEB_USERNAME: "admin"
       WEB_PASSWORD: "change_me"
     ports:
-      - "25708:8080"
+      - "127.0.0.1:25708:8080"
     volumes:
       - /www/server/panel/vhost/nginx:/bt-nginx:ro
       - /opt/bt-cf-sync/data:/data
