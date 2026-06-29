@@ -1,21 +1,163 @@
 # bt-cf-sync
 
+中文 | [English](#english)
+
+把宝塔面板 Nginx 站点自动同步到 Cloudflare DNS 的 Docker 小工具。
+
+容器会读取宝塔生成的 Nginx 站点配置，提取 `server_name` 里属于 `BASE_DOMAIN` 的域名，然后在 Cloudflare 自动创建、更新或删除 DNS 记录。
+
+## 工作原理
+
+```text
+宝塔创建 /www/server/panel/vhost/nginx/example.lsjmax.top.conf
+Docker 通过只读 volume 在 /bt-nginx 看到这个文件
+脚本提取 server_name example.lsjmax.top
+脚本调用 Cloudflare API 创建或更新 DNS 记录
+```
+
+如果 `DELETE_MISSING=true`，当宝塔站点被删除后，容器会删除它自己创建或接管过的 Cloudflare DNS 记录。
+
+为了避免误删，多台 VPS 部署时，每台机器都应该设置不同的 `OWNER_ID`。
+
+## Cloudflare Token 权限
+
+创建 Cloudflare API Token 时只需要：
+
+- Zone - Zone - Read
+- Zone - DNS - Edit
+
+范围建议限制到指定域名，例如 `lsjmax.top`。
+
+## Docker Compose 部署
+
+复制环境变量示例：
+
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 后启动：
+
+```bash
+docker compose up -d
+docker logs -f bt-cf-sync
+```
+
+`compose.yaml` 默认使用 GHCR 镜像：
+
+```yaml
+services:
+  bt-cf-sync:
+    image: ghcr.io/xzw38/bt-cf-sync:latest
+    container_name: bt-cf-sync
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - /www/server/panel/vhost/nginx:/bt-nginx:ro
+      - ./data:/data
+```
+
+如果镜像发布在其他 GitHub 账号或组织下，把 `xzw38` 改成对应名称。
+
+## Portainer Stack
+
+可以直接参考 [stacks/portainer-stack.yaml](stacks/portainer-stack.yaml)。
+
+在 Portainer 的 Stacks 里重点修改：
+
+- `image`
+- `CF_API_TOKEN`
+- `BASE_DOMAIN`
+- `OWNER_ID`
+
+每台 VPS 的 `OWNER_ID` 要不同，例如：
+
+```text
+main
+oracle-arm
+hk-vps
+```
+
+## 环境变量
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `CF_API_TOKEN` | 必填 | Cloudflare API Token。 |
+| `BASE_DOMAIN` | 必填 | 要同步的主域名，例如 `lsjmax.top`。 |
+| `OWNER_ID` | `default` | 当前 VPS 的唯一名称。 |
+| `PUBLIC_IP` | `auto` | 写入 DNS 的公网 IP，`auto` 表示自动获取。 |
+| `PROXIED` | `true` | 是否开启 Cloudflare 橙云代理。 |
+| `SLEEP_SECONDS` | `60` | 每隔多少秒同步一次。 |
+| `ADOPT_EXISTING` | `true` | 如果已有记录已经指向当前 VPS IP，是否接管并打标记。 |
+| `DELETE_MISSING` | `true` | 宝塔站点消失后，是否删除自己拥有的 DNS 记录。 |
+| `RECORD_TYPE` | `A` | DNS 记录类型，IPv4 用 `A`，IPv6 用 `AAAA`。 |
+| `WATCH_DIR` | `/bt-nginx` | 容器内读取宝塔 Nginx 站点配置的路径。 |
+
+## 更新镜像
+
+代码推送到 `main` 分支后，GitHub Actions 会自动构建并推送：
+
+```text
+ghcr.io/xzw38/bt-cf-sync:latest
+```
+
+每台 VPS 更新：
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+如果使用 Portainer，可以手动 redeploy stack，或者配合 Watchtower 一类工具自动拉取新镜像。
+
+## 发布到 GHCR
+
+本项目已经包含 GitHub Actions 配置：
+
+```text
+.github/workflows/docker-image.yml
+```
+
+创建 GitHub 仓库并推送 `main` 分支后，Actions 会自动发布 `latest` 镜像到 GHCR。
+
+如果 GitHub CLI 显示登录失效，重新登录一次即可：
+
+```bash
+gh auth login -h github.com
+```
+
+这是当前 Windows 用户的全局登录状态，不是每个项目单独登录。只要 `gh auth status` 正常，后续所有项目都能共用。
+
+## 注意事项
+
+- 容器通过 volume 读取宿主机目录，不会默认访问所有宿主机文件。
+- `/www/server/panel/vhost/nginx:/bt-nginx:ro` 是只读挂载，容器只能读宝塔配置，不能修改。
+- 如果 Cloudflare 已经有同名记录指向其他 IP，默认不会抢占。
+- 如果要部署到多台 VPS，每台 VPS 都使用同一个镜像，只改环境变量。
+
+## English
+
+[中文](#bt-cf-sync) | English
+
 Sync BT Panel Nginx site domains to Cloudflare DNS from a small Docker container.
 
-The container reads BT Panel Nginx vhost files, extracts `server_name` values under `BASE_DOMAIN`, and creates or updates Cloudflare DNS records for the current VPS.
+The container reads BT Panel Nginx vhost files, extracts `server_name` values under `BASE_DOMAIN`, and creates, updates, or deletes Cloudflare DNS records for the current VPS.
 
-## How It Works
+### How It Works
 
 ```text
 BT Panel creates /www/server/panel/vhost/nginx/example.lsjmax.top.conf
-Container sees it through a read-only volume at /bt-nginx
-Container extracts server_name example.lsjmax.top
-Container creates or updates the Cloudflare DNS record
+The container sees it through a read-only volume at /bt-nginx
+The script extracts server_name example.lsjmax.top
+The script creates or updates the Cloudflare DNS record
 ```
 
 When `DELETE_MISSING=true`, domains removed from BT Panel are deleted from Cloudflare only if they are owned by this container.
 
-## Cloudflare Token Permissions
+Use a different `OWNER_ID` on each VPS to avoid cross-machine deletion.
+
+### Cloudflare Token Permissions
 
 Create a Cloudflare API token with:
 
@@ -24,7 +166,7 @@ Create a Cloudflare API token with:
 
 Limit the token to the specific zone, for example `lsjmax.top`.
 
-## Docker Compose
+### Docker Compose
 
 Copy `.env.example` to `.env`, edit the values, then run:
 
@@ -50,18 +192,20 @@ services:
 
 Replace `xzw38` if you publish the image under another GitHub account or organization.
 
-## Portainer Stack
+### Portainer Stack
 
-Use `stacks/portainer-stack.yaml` as the base. In Portainer, replace:
+Use [stacks/portainer-stack.yaml](stacks/portainer-stack.yaml) as the base.
 
-- `ghcr.io/xzw38/bt-cf-sync:latest`
+In Portainer, replace:
+
+- `image`
 - `CF_API_TOKEN`
 - `BASE_DOMAIN`
 - `OWNER_ID`
 
-Each VPS should have a different `OWNER_ID`, such as `main`, `oracle-arm`, or `hk-vps`.
+Each VPS should use a different `OWNER_ID`, such as `main`, `oracle-arm`, or `hk-vps`.
 
-## Environment Variables
+### Environment Variables
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -76,7 +220,7 @@ Each VPS should have a different `OWNER_ID`, such as `main`, `oracle-arm`, or `h
 | `RECORD_TYPE` | `A` | Use `A` for IPv4 or `AAAA` for IPv6. |
 | `WATCH_DIR` | `/bt-nginx` | Container path for BT Panel Nginx vhost files. |
 
-## Updating
+### Updating
 
 After pushing to the `main` branch, GitHub Actions builds and pushes:
 
@@ -91,4 +235,29 @@ docker compose pull
 docker compose up -d
 ```
 
-If you use Portainer, redeploy the stack or enable automatic updates with your preferred updater.
+If you use Portainer, redeploy the stack or use your preferred image updater.
+
+### Publishing To GHCR
+
+This repository includes the GitHub Actions workflow:
+
+```text
+.github/workflows/docker-image.yml
+```
+
+After creating the GitHub repository and pushing the `main` branch, Actions publishes the `latest` image to GHCR automatically.
+
+If GitHub CLI reports an expired login, re-authenticate once:
+
+```bash
+gh auth login -h github.com
+```
+
+This is a global login for the current Windows user, not a per-project login. Once `gh auth status` works, other projects can reuse it.
+
+### Notes
+
+- The container reads host files only through explicitly mounted volumes.
+- `/www/server/panel/vhost/nginx:/bt-nginx:ro` is read-only, so the container cannot modify BT Panel configuration.
+- Existing Cloudflare records pointing to a different IP are not overwritten by default.
+- For multiple VPS machines, use the same image and change only the environment variables.
